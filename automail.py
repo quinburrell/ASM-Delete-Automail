@@ -1,20 +1,16 @@
 """Takes an ASM delete ticket and automatically generates an email to the manager in question
 TO DO:
--Service Desk Portal link
--Open email after creation
--Read ticket number
+-Edit existing .eml file rather than writing each time.
+-Search for correct location of values in ticket rather than using magic numbers.
 """
 
 import sys
 import os
-from urllib.request import Request, urlopen
-from urllib.error import URLError, HTTPError
 from datetime import date
 from email import generator
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 file_path = "C:/Users/burrellq/OneDrive - education.govt.nz/Documents/scripts/Delete Auto Mail/"
-
 
 """Takes an input as a pasted ticket and outputs it as a string"""
 def read_ticket():
@@ -25,7 +21,7 @@ def read_ticket():
 """Takes a ticket as a string and extracts details from it
 Outputs details as req_num, user, manager, date
 assumes positions in ASM ticket as determined by set values user_x etc."""
-def extract(ticket, user_x=35, manager_x=9, date_x=93): #some more magic numbers
+def extract(ticket, user_x=35, manager_x=9, date_x=93): #some more magic numbers. The location of the values to be extracted.
     user_x = ticket[0].find('r ') + 2
     user_y = ticket[0].find('.')
     user = ticket[0][user_x:user_y] #slices the users name
@@ -54,6 +50,7 @@ def emailise(name, email_name=""):
             email_name += "."
     return email_name + "@education.govt.nz"
 
+"""Inserts the user's name, manager's first name, and end date from the ticket into a block of html text that will be the email."""
 def email_text(user, manager_first, end_date):
     past_text = ["is leaving", "has left"]
     return f"""
@@ -88,9 +85,6 @@ def create_email(user, manager, end_date):
         <head></head>
         <body>{email_text(user, manager.split()[0], end_date)}</body>
     </html>"""
-
-    print(html)
-    
     
     part = MIMEText(html, 'html')
     msg.attach(part)
@@ -102,21 +96,8 @@ def create_email(user, manager, end_date):
     outfile.close()
 
 
-"""Scrapes the current open webpage. Currently unused"""
-def web_scraper(url, html=0):
-    req = Request(url, headers={'User-Agent': 'Mozilla/5.0'})
-    try:
-        page = urlopen(req)
-        html_bytes = page.read()
-        html = html_bytes.decode("utf-8")
-    except HTTPError as err:
-        print(f"error reading, code {err}")
-    return html
-
-
-
 #The main execution. The programme repeatedly generates emails from given tickets until the user gives the end command 'x'
-info_x, info_y = 39, 49 #magic numbers
+info_x, info_y = 39, 49 #magic numbers. These are the positions in a standard delete user ticket of the lines with user, manager, and date.
 while 1:
     ticket = read_ticket().split("\n")
     values = extract((ticket[info_x], ticket[info_y]))
@@ -126,4 +107,3 @@ while 1:
     cont = input("press x then enter to close programe, or enter to run again: ")
     if cont == "x":
         break
-
